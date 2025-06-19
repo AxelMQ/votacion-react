@@ -26,9 +26,10 @@ export default function LoginForm() {
             if (response.success && response.token) {
                 // Guarda el token si lo necesitas
                 localStorage.setItem("token", response.token);
+                localStorage.setItem("user", JSON.stringify(response.data)); 
                 setSuccess('¡Inicio de sesión exitoso!');
                 // Redirige al dashboard o a donde desees
-                // router.push('/dashboard');
+                router.push('/dashboard');
                 // Puedes limpiar los campos si quieres
                 setCarnet('');
                 setPassword('');
