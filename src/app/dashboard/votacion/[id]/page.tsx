@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getVotacionCompleta, VotacionCompleta } from "@/services/votacionCompleta";
 import { actualizarEstadoVotacion } from "@/services/cambiarEstado";
+import { getVotosPorVotacion, Voto } from "@/services/votoService";
+import ResultadosGrafica from "@/components/ResultadosGrafica";
 
 export default function VotacionDetallePage() {
   const params = useParams() as { id?: string };
@@ -10,16 +12,34 @@ export default function VotacionDetallePage() {
   const [votacion, setVotacion] = useState<VotacionCompleta | null>(null);
   const estados = ["pendiente", "en_progreso", "finalizada"];
   const [nuevoEstado, setNuevoEstado] = useState<string>("");
+  const [votos, setVotos] = useState<Voto[]>([]);
+  const [loadingVotos, setLoadingVotos] = useState(true);
   const [loading, setLoading] = useState(true);
   const [mensaje, setMensaje] = useState("");
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    getVotacionCompleta(id as string)
-      .then(setVotacion)
-      .catch((err) => setMensaje(err.message))
+    getVotacionCompleta(id)
+      .then((data) => setVotacion(data))
+      .catch((err) => setMensaje(err.message || "Error al cargar la votación"))
       .finally(() => setLoading(false));
+  }, [id]);
+
+  // Cargar votos y actualizar cada 5 segundos
+  useEffect(() => {
+    if (!id) return;
+    let interval: NodeJS.Timeout;
+    const fetchVotos = () => {
+      setLoadingVotos(true);
+      getVotosPorVotacion(id)
+        .then(setVotos)
+        .catch(() => setVotos([]))
+        .finally(() => setLoadingVotos(false));
+    };
+    fetchVotos();
+    interval = setInterval(fetchVotos, 10000); // Actualiza cada 10 segundos
+    return () => clearInterval(interval);
   }, [id]);
 
   useEffect(() => {
@@ -111,14 +131,48 @@ export default function VotacionDetallePage() {
                 <p className="text-gray-500">No hay participantes asignados.</p>
               ) : (
                 <ul className="space-y-1 max-h-32 overflow-y-auto">
-                  {votacion.participantes.map((p) => (
-                    <li key={p.id} className="text-sm text-gray-800">
-                      {p.nombre} {p.apellido} <span className="text-xs text-gray-500">({p.carnet})</span>
-                    </li>
-                  ))}
+                  {votacion.participantes.map((p) => {
+                    const yaVoto = votos.some((v) => v.estudiante_id === p.id);
+                    return (
+                      <li key={p.id} className="text-sm text-gray-800 flex items-center gap-2">
+                        {p.nombre} {p.apellido} <span className="text-xs text-gray-500">({p.carnet})</span>
+                        {yaVoto ? (
+                          <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-semibold">Ya votó</span>
+                        ) : (
+                          <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">No ha votado</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
+            <div className="mt-6">
+            <h3 className="font-semibold text-blue-700 mb-2">Resultados parciales</h3>
+            {loadingVotos ? (
+              <p className="text-gray-500">Cargando votos...</p>
+            ) : (
+              <ul className="space-y-1">
+                {votacion?.candidatos.map((c) => {
+                  const cantidad = votos.filter(v => v.candidato_id === c.id).length;
+                  return (
+                    <li key={c.id} className="flex items-center gap-2">
+                      <span className="font-medium text-black">{c.nombre} {c.apellido}</span>
+                      <span className="px-2 py-1 bg-gray-200 rounded text-xs text-gray-800">{cantidad} voto(s)</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <div className="mt-6">
+            <h3 className="font-semibold text-blue-700 mb-2">Resultados parciales</h3>
+            {loadingVotos ? (
+              <p className="text-gray-500">Cargando votos...</p>
+            ) : (
+              votacion && <ResultadosGrafica votacion={votacion} votos={votos} />
+            )}
+          </div>
           </>
         ) : mensaje ? (
           <p className="text-red-600">{mensaje}</p>

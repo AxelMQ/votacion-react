@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getVotaciones, Votacion } from "@/services/getVotaciones";
 import { puedeVotar } from "@/services/puedeVotar";
+import { yaVoto } from "@/services/yaVotoService";
 
 
 interface UserData {
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [votaciones, setVotaciones] = useState<Votacion[]>([]);
   const [loadingVotaciones, setLoadingVotaciones] = useState(true);
   const [puedeVotarMap, setPuedeVotarMap] = useState<Record<number, boolean | null>>({});
+  const [yaVotoMap, setYaVotoMap] = useState<Record<number, boolean | null>>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -53,6 +55,15 @@ export default function DashboardPage() {
     localStorage.removeItem("user");
     router.push("/login");
   };
+
+  useEffect(() => {
+    if (!user || !user.id || votaciones.length === 0) return;
+    votaciones.forEach((v) => {
+      yaVoto(v.id, Number(user.id))
+        .then((res) => setYaVotoMap((prev) => ({ ...prev, [v.id]: res })))
+        .catch(() => setYaVotoMap((prev) => ({ ...prev, [v.id]: null })));
+    });
+  }, [user, votaciones]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -139,10 +150,22 @@ export default function DashboardPage() {
                 >
                   Ver detalles
                 </button>
-                {puedeVotarMap[v.id] === undefined ? (
+                {puedeVotarMap[v.id] === undefined || yaVotoMap[v.id] === undefined ? (
                   <span className="px-3 py-1 bg-gray-200 text-gray-600 rounded text-xs">Verificando...</span>
                 ) : puedeVotarMap[v.id] ? (
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">Habilitado para votar</span>
+                  yaVotoMap[v.id] ? (
+                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">Ya votaste</span>
+                  ) : (
+                    <>
+                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">Habilitado para votar</span>
+                      <button
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs font-semibold"
+                        onClick={() => router.push(`/votar/${v.id}`)}
+                      >
+                        Votar
+                      </button>
+                    </>
+                  )
                 ) : (
                   <span className="px-3 py-1 bg-red-100 text-red-800 rounded text-xs font-semibold">No habilitado</span>
                 )}
