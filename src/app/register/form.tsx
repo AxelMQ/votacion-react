@@ -203,6 +203,7 @@ export default function RegisterForm() {
               value={formData.paralelo}
               onChange={handleChange}
             >
+              <option value="">Selecciona un paralelo</option>
               <option value="A">A</option>
               <option value="B">B</option>
               <option value="C">C</option>
