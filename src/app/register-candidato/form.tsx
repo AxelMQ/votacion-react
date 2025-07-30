@@ -1,6 +1,6 @@
 'use client';
 import { useState, ChangeEvent, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { registerCandidato } from '@/services/registerCandidato';
 
 interface FormData {
@@ -22,7 +22,7 @@ export default function RegisterCandidatoForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  const router = useRouter();
+  // const router = useRouter();
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

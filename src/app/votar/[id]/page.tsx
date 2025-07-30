@@ -67,8 +67,9 @@ export default function VotarPage() {
       await emitirVoto({ votacion_id: id, candidato_id: candidatoId, estudiante_id: estudianteId });
       setMensaje("¡Voto registrado correctamente!");
       setTimeout(() => router.push("/dashboard"), 1500);
-    } catch (err: any) {
-      setMensaje(err.message || "Error al emitir el voto.");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al emitir el voto.";
+      setMensaje(errorMessage);
     }
   };
 

@@ -5,6 +5,7 @@ import { getVotacionCompleta, VotacionCompleta } from "@/services/votacionComple
 import { actualizarEstadoVotacion } from "@/services/cambiarEstado";
 import { getVotosPorVotacion, Voto } from "@/services/votoService";
 import ResultadosGrafica from "@/components/ResultadosGrafica";
+import Image from "next/image";
 
 export default function VotacionDetallePage() {
   const params = useParams() as { id?: string };
@@ -29,7 +30,6 @@ export default function VotacionDetallePage() {
   // Cargar votos y actualizar cada 5 segundos
   useEffect(() => {
     if (!id) return;
-    let interval: NodeJS.Timeout;
     const fetchVotos = () => {
       setLoadingVotos(true);
       getVotosPorVotacion(id)
@@ -38,7 +38,7 @@ export default function VotacionDetallePage() {
         .finally(() => setLoadingVotos(false));
     };
     fetchVotos();
-    interval = setInterval(fetchVotos, 10000); // Actualiza cada 10 segundos
+    const interval = setInterval(fetchVotos, 10000); // Actualiza cada 10 segundos
     return () => clearInterval(interval);
   }, [id]);
 
@@ -51,11 +51,15 @@ export default function VotacionDetallePage() {
     setLoading(true);
     setMensaje("");
     try {
-      const res = await actualizarEstadoVotacion(id, nuevoEstado);
+      await actualizarEstadoVotacion(id, nuevoEstado);
       setVotacion((prev) => prev ? { ...prev, estado: nuevoEstado } : prev);
       setMensaje("¡Estado actualizado correctamente!");
-    } catch (err: any) {
-      setMensaje(err.message || "Error al actualizar estado");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setMensaje(err.message);
+      } else {
+        setMensaje("Error al actualizar estado");
+      }
     } finally {
       setLoading(false);
     }
@@ -110,9 +114,11 @@ export default function VotacionDetallePage() {
                   {votacion.candidatos.map((c) => (
                     <li key={c.id} className="flex items-center space-x-2">
                       {c.fotoUrl ? (
-                        <img
+                        <Image
                           src={`${process.env.NEXT_PUBLIC_API_URL}${c.fotoUrl}`}
                           alt={c.nombre}
+                          width={32}
+                          height={32}
                           className="w-8 h-8 rounded-full object-cover"
                         />
                       ) : (

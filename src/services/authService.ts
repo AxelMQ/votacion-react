@@ -6,8 +6,8 @@ interface StudentRegisterData {
   nombre: string;
   apellido: string;
   password: string;
-  curso?: string;  // Opcional si no es requerido
-  paralelo?: string; // Opcional si no es requerido
+  curso?: string;
+  paralelo?: string;
 }
 
 interface LoginCredentials {
@@ -15,48 +15,54 @@ interface LoginCredentials {
   password: string;
 }
 
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-  token?: string;
-  user?: {
-    id: string;
-    carnet: string;
-    nombre: string;
-    apellido: string;
-  };
+interface UserData {
+  id: string;
+  carnet: string;
+  nombre: string;
+  apellido: string;
+  curso?: string;
+  paralelo?: string;
 }
 
-// Configuración común para fetch
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data?: T;
+  token?: string;
+  user?: UserData;
+}
+
+// Common fetch configuration
 const fetchConfig = {
   baseHeaders: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 8000 // 8 segundos
+  timeout: 8000 // 8 seconds
 };
 
-export const registerStudent = async (studentData: StudentRegisterData): Promise<ApiResponse> => {
+export const registerStudent = async (studentData: StudentRegisterData): Promise<ApiResponse<UserData>> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), fetchConfig.timeout);
+
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), fetchConfig.timeout);
-    
     const response = await fetch(`${API_URL}/api/estudiantes/register`, {
       method: 'POST',
       headers: fetchConfig.baseHeaders,
       body: JSON.stringify({
-        carnet: studentData.carnet, // Asegúrate que coincida con el modelo del backend
+        carnet: studentData.carnet,
         nombre: studentData.nombre,
         apellido: studentData.apellido,
         password: studentData.password,
-        curso: studentData.curso || '', // Enviar como cadena vacía si no se proporciona
-        paralelo: studentData.paralelo || '', // Enviar como cadena vacía si no se proporciona
+        curso: studentData.curso || '',
+        paralelo: studentData.paralelo || '',
       }),
       signal: controller.signal
     });
 
-    const data: ApiResponse = await response.json();
+    clearTimeout(timeoutId);
+
+    const data: ApiResponse<UserData> = await response.json();
 
     if (!response.ok) {
       throw new Error(data.message || 'Error en el registro');
@@ -64,21 +70,27 @@ export const registerStudent = async (studentData: StudentRegisterData): Promise
 
     return data;
   } catch (error) {
+    clearTimeout(timeoutId);
     console.error('Error en registerStudent:', error);
+    
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('La solicitud tardó demasiado. Por favor intente nuevamente');
+    }
+    
     throw error instanceof Error ? error : new Error('Error desconocido');
   }
 };
 
-export const loginStudent = async (credentials: LoginCredentials): Promise<ApiResponse> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), fetchConfig.timeout);
+export const loginStudent = async (credentials: LoginCredentials): Promise<ApiResponse<UserData>> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), fetchConfig.timeout);
 
+  try {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: fetchConfig.baseHeaders,
       body: JSON.stringify({
-        carnet: credentials.carnet, // Asegúrate que coincida con el backend
+        carnet: credentials.carnet,
         password: credentials.password
       }),
       signal: controller.signal
@@ -86,19 +98,18 @@ export const loginStudent = async (credentials: LoginCredentials): Promise<ApiRe
 
     clearTimeout(timeoutId);
 
-    const data: ApiResponse = await response.json();
+    const data: ApiResponse<UserData> = await response.json();
 
     if (!response.ok) {
       throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
     }
 
     return data;
-
   } catch (error) {
-     console.error('Error en loginStudent:', error);
+    clearTimeout(timeoutId);
+    console.error('Error en loginStudent:', error);
     
-    // Mensajes más específicos para el usuario
-    if (typeof error === 'object' && error !== null && 'name' in error && (error as any).name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('La solicitud tardó demasiado. Por favor intente nuevamente');
     }
     

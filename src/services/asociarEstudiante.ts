@@ -5,10 +5,19 @@ interface AsociarEstudiantePayload {
   estudiante_id: number;
 }
 
-interface ApiResponse {
+// Define a specific interface for the response data
+interface VotacionEstudianteData {
+  id: number;
+  votacion_id: number;
+  estudiante_id: number;
+  created_at: string;
+  // Add other fields that your API returns
+}
+
+interface ApiResponse<T = VotacionEstudianteData> {
   success: boolean;
   message: string;
-  data?: any;
+  data?: T;
 }
 
 export const asociarEstudianteAVotacion = async (payload: AsociarEstudiantePayload): Promise<ApiResponse> => {

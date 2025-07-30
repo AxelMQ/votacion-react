@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Candidato } from "@/services/candidatosVotacionService";
+import Image from "next/image";
 
 interface CandidatoCardProps {
   candidato: Candidato;
@@ -22,10 +23,12 @@ export function CandidatoCard({ candidato, seleccionado, onSelect }: CandidatoCa
       <div className="flex items-center w-full">
         {candidato.fotoUrl ? (
           <div className="w-24 h-24 rounded-full bg-white border-4 border-green-200 shadow flex items-center justify-center mr-6 overflow-hidden">
-            <img
+            <Image
               src={`${process.env.NEXT_PUBLIC_API_URL}${candidato.fotoUrl}`}
               alt={candidato.nombre}
               className="w-full h-full object-cover"
+              width={96}
+              height={96}
             />
           </div>
         ) : (

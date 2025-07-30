@@ -3,9 +3,19 @@ import { useState, useEffect } from "react";
 import { getCandidatos, Candidato } from "@/services/candidatoService";
 import { asociarCandidatoAVotacion } from "@/services/asociarCandidato";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+interface Votacion {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+}
 
 export default function AsignarCandidatosPage() {
-  const [votacion, setVotacion] = useState<any>(null);
+  const [votacion, setVotacion] = useState<Votacion | null>(null);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [mensaje, setMensaje] = useState("");
@@ -52,8 +62,9 @@ export default function AsignarCandidatosPage() {
       setTimeout(() => {
         router.push("/votacion-nueva/asignar-estudiantes");
       }, 1200); // Espera 1.2 segundos para mostrar el mensaje antes de redirigir
-    } catch (error: any) {
-      setMensaje(error.message || "Error al asignar candidatos.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error al asignar candidatos";
+      setMensaje(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -100,24 +111,27 @@ export default function AsignarCandidatosPage() {
                     
                     <div className="w-12 h-12 relative rounded-full overflow-hidden">
                         {c.fotoUrl ? (
-                            <img
-                            src={`${process.env.NEXT_PUBLIC_API_URL}${c.fotoUrl.startsWith('/') ? '' : '/'}${c.fotoUrl}`}
-                            alt={`Foto de ${c.nombre}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                console.log(`Error loading image for ${c.nombre}:`, c.fotoUrl);
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src = ''; // Clear src
-                                if (e.currentTarget.parentElement) {
-                                    e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full bg-gray-200 flex items-center justify-center"><span class="text-gray-500 text-2xl">👤</span></div>';
-                                }
-                            }}
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-500 text-2xl">👤</span>
-                            </div>
-                        )}
+                      <div className="w-12 h-12 relative rounded-full overflow-hidden">
+                        <Image
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${c.fotoUrl.startsWith('/') ? '' : '/'}${c.fotoUrl}`}
+                          alt={`Foto de ${c.nombre}`}
+                          fill
+                          className="object-cover"
+                          onError={(e) => {
+                            console.log(`Error loading image for ${c.nombre}:`, c.fotoUrl);
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = ''; // Clear src
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full bg-gray-200 flex items-center justify-center"><span class="text-gray-500 text-2xl">👤</span></div>';
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-gray-500 text-2xl">👤</span>
+                      </div>
+                    )}
                     </div>
                     <div className="flex-1">
                       <label htmlFor={`candidato-${c.id}`} className="text-black font-medium">

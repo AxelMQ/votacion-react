@@ -4,8 +4,18 @@ import { getEstudiantes, Estudiante } from "@/services/estudiantesService";
 import { asociarEstudianteAVotacion } from "@/services/asociarEstudiante";
 import { useRouter } from "next/navigation";
 
+interface Votacion {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  // Agrega aquí otros campos que necesites
+}
+
 export default function AsignarEstudiantesPage() {
-  const [votacion, setVotacion] = useState<any>(null);
+  const [votacion, setVotacion] = useState<Votacion | null>(null);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [mensaje, setMensaje] = useState("");
@@ -49,8 +59,9 @@ export default function AsignarEstudiantesPage() {
       setTimeout(() => {
         router.push("/dashboard");
       }, 1200);
-    } catch (error: any) {
-      setMensaje(error.message || "Error al asignar estudiantes.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error al asignar estudiantes";
+      setMensaje(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -8,13 +8,28 @@ interface VotacionData {
   hora_fin: string;      // formato: HH:mm:ss
 }
 
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  data?: any;
+// Define the expected response data structure
+interface VotacionResponseData {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  estado: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export const crearVotacion = async (votacion: VotacionData): Promise<ApiResponse> => {
+interface ApiResponse<T = VotacionResponseData> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
+
+export const crearVotacion = async (
+  votacion: VotacionData
+): Promise<ApiResponse> => {
   const response = await fetch(`${API_URL}/api/votaciones`, {
     method: "POST",
     headers: {
@@ -25,8 +40,10 @@ export const crearVotacion = async (votacion: VotacionData): Promise<ApiResponse
   });
 
   const data: ApiResponse = await response.json();
+
   if (!response.ok) {
     throw new Error(data.message || "Error al crear la votación");
   }
+
   return data;
 };
